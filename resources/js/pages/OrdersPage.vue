@@ -756,7 +756,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   Plus, Search, Printer, FileText, Truck, CircleDollarSign, ArrowUpDown,
@@ -787,6 +787,14 @@ const loading = ref(true);
 const saving = ref(false);
 
 const search = ref(route.query.search || '');
+const debouncedSearch = ref(search.value);
+let searchDebounceTimer = null;
+watch(search, (val) => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    debouncedSearch.value = val;
+  }, 150);
+});
 const sortBy = ref('newest');
 const activeStatus = ref('all');
 const specialFilter = ref('all'); // 'all', 'upcoming', 'due_after_delivery'
@@ -997,9 +1005,9 @@ const filteredOrders = computed(() => {
     }
   }
 
-  // Search filter
-  if (search.value.trim()) {
-    const q = search.value.trim().toLowerCase();
+  // Search filter (debounced for smooth 60fps typing)
+  if (debouncedSearch.value.trim()) {
+    const q = debouncedSearch.value.trim().toLowerCase();
     list = list.filter(o =>
       String(o.order_number || '').includes(q) ||
       (o.iv_number || '').toLowerCase().includes(q) ||

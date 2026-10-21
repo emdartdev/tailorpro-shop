@@ -615,6 +615,15 @@ const filterTabs = computed(() => {
   ];
 });
 
+const debouncedSearch = ref(search.value);
+let searchDebounceTimer = null;
+watch(search, (val) => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    debouncedSearch.value = val;
+  }, 150);
+});
+
 const filteredOrders = computed(() => {
   let list = orders.value;
 
@@ -624,7 +633,7 @@ const filteredOrders = computed(() => {
     list = list.filter(o => o.status === 'delivered');
   }
 
-  const q = search.value.trim().toLowerCase();
+  const q = debouncedSearch.value.trim().toLowerCase();
   if (!q) return list;
 
   return list.filter((o) => {

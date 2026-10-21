@@ -336,15 +336,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Plus, Search, Trash2, Edit, Loader2, Download, ChevronDown,
   ShoppingBag, ArrowUpDown, History
 } from 'lucide-vue-next';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { hindSiliguriBoldBase64 } from '@/lib/hindSiliguriBold';
 import { t } from '@/lib/language';
 import api from '@/lib/api';
 
@@ -354,6 +351,14 @@ const router = useRouter();
 const customers = ref([]);
 const loading = ref(true);
 const search = ref('');
+const debouncedSearch = ref(search.value);
+let searchDebounceTimer = null;
+watch(search, (val) => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    debouncedSearch.value = val;
+  }, 150);
+});
 const sortBy = ref('newest');
 const customerTab = ref('officer');
 const visibleCount = ref(PAGE_SIZE);
@@ -380,9 +385,9 @@ const filteredCustomers = computed(() => {
     list = list.filter(c => c.phone && c.phone !== '-');
   }
 
-  // Filter search
-  if (search.value.trim()) {
-    const q = search.value.trim().toLowerCase();
+  // Filter search (debounced for 60fps responsiveness)
+  if (debouncedSearch.value.trim()) {
+    const q = debouncedSearch.value.trim().toLowerCase();
     list = list.filter(c =>
       (c.name || '').toLowerCase().includes(q) ||
       (c.phone || '').includes(q) ||
@@ -549,8 +554,13 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-function exportPDF() {
+async function exportPDF() {
   exportOpen.value = false;
+  const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+  const autoTable = autoTableModule.default || autoTableModule;
   const doc = new jsPDF();
   const w = doc.internal.pageSize.getWidth();
 

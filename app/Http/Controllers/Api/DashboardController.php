@@ -24,80 +24,85 @@ class DashboardController extends Controller
             $orderQuery->where('order_category', $category);
         }
 
-        $orderIdSubquery = (clone $orderQuery)->select('id');
+        $orderIdsSub = (clone $orderQuery)->select('id');
+        $advPluckSub = DB::table('payment_history')->where('payment_type', 'advance')->select('order_id');
 
-        // Today KPIs
-        $todaysOrders = (clone $orderQuery)->whereDate('order_date', $today)->count();
-        $todaysSales = (float) (clone $orderQuery)->whereDate('order_date', $today)->sum('total_amount');
-        $todaysPh = (float) DB::table('payment_history')
-            ->whereIn('order_id', (clone $orderQuery)->select('id'))
-            ->whereDate('created_at', $today)
-            ->where('payment_type', '!=', 'discount')
-            ->sum('amount');
-        $todaysAdv = (float) (clone $orderQuery)
-            ->whereDate('order_date', $today)
-            ->whereNotIn('id', DB::table('payment_history')->where('payment_type', 'advance')->pluck('order_id'))
-            ->sum('advance');
-        $todaysCollection = $todaysPh + $todaysAdv;
-        $todaysDue = (float) (clone $orderQuery)->whereDate('order_date', $today)->sum('due');
+        // 1. Single-pass Order KPI Aggregates
+        $orderAggs = (clone $orderQuery)->selectRaw("
+            COUNT(*) as total_orders,
+            COALESCE(SUM(total_amount), 0) as total_sales,
+            COALESCE(SUM(due), 0) as all_due,
+            COALESCE(SUM(CASE WHEN status = 'delivered' THEN advance ELSE 0 END), 0) as delivered_advance,
+            COALESCE(SUM(CASE WHEN status = 'delivered' THEN due ELSE 0 END), 0) as delivered_due,
+            COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered_orders,
+            COALESCE(SUM(CASE WHEN status != 'delivered' AND delivery_date IS NOT NULL AND delivery_date >= ? THEN 1 ELSE 0 END), 0) as upcoming_deliveries,
+            COALESCE(SUM(CASE WHEN order_date = ? THEN 1 ELSE 0 END), 0) as todays_orders,
+            COALESCE(SUM(CASE WHEN order_date = ? THEN total_amount ELSE 0 END), 0) as todays_sales,
+            COALESCE(SUM(CASE WHEN order_date = ? THEN due ELSE 0 END), 0) as todays_due,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN 1 ELSE 0 END), 0) as weekly_orders,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN total_amount ELSE 0 END), 0) as weekly_sales,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN due ELSE 0 END), 0) as weekly_due,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN 1 ELSE 0 END), 0) as monthly_orders,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN total_amount ELSE 0 END), 0) as monthly_sales,
+            COALESCE(SUM(CASE WHEN order_date >= ? THEN due ELSE 0 END), 0) as monthly_due
+        ", [
+            $today,
+            $today, $today, $today,
+            $startOfWeek, $startOfWeek, $startOfWeek,
+            $startOfMonth, $startOfMonth, $startOfMonth,
+        ])->first();
 
-        // Weekly KPIs
-        $weeklyOrders = (clone $orderQuery)->whereDate('order_date', '>=', $startOfWeek)->count();
-        $weeklySales = (float) (clone $orderQuery)->whereDate('order_date', '>=', $startOfWeek)->sum('total_amount');
-        $weeklyPh = (float) DB::table('payment_history')
-            ->whereIn('order_id', (clone $orderQuery)->select('id'))
-            ->whereDate('created_at', '>=', $startOfWeek)
-            ->where('payment_type', '!=', 'discount')
-            ->sum('amount');
-        $weeklyAdv = (float) (clone $orderQuery)
-            ->whereDate('order_date', '>=', $startOfWeek)
-            ->whereNotIn('id', DB::table('payment_history')->where('payment_type', 'advance')->pluck('order_id'))
-            ->sum('advance');
-        $weeklyCollection = $weeklyPh + $weeklyAdv;
-        $weeklyDue = (float) (clone $orderQuery)->whereDate('order_date', '>=', $startOfWeek)->sum('due');
+        // 2. Single-pass Payment History Aggregates
+        $phAggs = DB::table('payment_history')
+            ->whereIn('order_id', $orderIdsSub)
+            ->selectRaw("
+                COALESCE(SUM(amount), 0) as total_ph,
+                COALESCE(SUM(CASE WHEN DATE(created_at) = ? AND payment_type != 'discount' THEN amount ELSE 0 END), 0) as todays_ph,
+                COALESCE(SUM(CASE WHEN DATE(created_at) >= ? AND payment_type != 'discount' THEN amount ELSE 0 END), 0) as weekly_ph,
+                COALESCE(SUM(CASE WHEN DATE(created_at) >= ? AND payment_type != 'discount' THEN amount ELSE 0 END), 0) as monthly_ph
+            ", [$today, $startOfWeek, $startOfMonth])
+            ->first();
 
-        // Monthly KPIs
-        $monthlyOrders = (clone $orderQuery)->whereDate('order_date', '>=', $startOfMonth)->count();
-        $monthlySales = (float) (clone $orderQuery)->whereDate('order_date', '>=', $startOfMonth)->sum('total_amount');
-        $monthlyPh = (float) DB::table('payment_history')
-            ->whereIn('order_id', (clone $orderQuery)->select('id'))
-            ->whereDate('created_at', '>=', $startOfMonth)
-            ->where('payment_type', '!=', 'discount')
-            ->sum('amount');
-        $monthlyAdv = (float) (clone $orderQuery)
-            ->whereDate('order_date', '>=', $startOfMonth)
-            ->whereNotIn('id', DB::table('payment_history')->where('payment_type', 'advance')->pluck('order_id'))
-            ->sum('advance');
-        $monthlyCollection = $monthlyPh + $monthlyAdv;
-        $monthlyDue = (float) (clone $orderQuery)->whereDate('order_date', '>=', $startOfMonth)->sum('due');
+        // 3. Single-pass Advance without payment_history record
+        $advAggs = (clone $orderQuery)
+            ->whereNotIn('id', $advPluckSub)
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN order_date = ? THEN advance ELSE 0 END), 0) as todays_adv,
+                COALESCE(SUM(CASE WHEN order_date >= ? THEN advance ELSE 0 END), 0) as weekly_adv,
+                COALESCE(SUM(CASE WHEN order_date >= ? THEN advance ELSE 0 END), 0) as monthly_adv
+            ", [$today, $startOfWeek, $startOfMonth])
+            ->first();
 
-        // Total Overview KPIs
-        $totalOrders = (clone $orderQuery)->count();
-        $totalSales = (float) (clone $orderQuery)->sum('total_amount');
+        $todaysOrders = (int) ($orderAggs->todays_orders ?? 0);
+        $todaysSales = (float) ($orderAggs->todays_sales ?? 0);
+        $todaysCollection = (float) (($phAggs->todays_ph ?? 0) + ($advAggs->todays_adv ?? 0));
+        $todaysDue = (float) ($orderAggs->todays_due ?? 0);
 
-        // Total Collection = payments from payment_history + unrecorded advance on delivered orders
-        $totalPh = (float) DB::table('payment_history')
-            ->whereIn('order_id', (clone $orderQuery)->select('id'))
-            ->sum('amount');
-        $deliveredAdvance = (float) (clone $orderQuery)->where('status', 'delivered')->sum('advance');
-        $unrecordedAdvance = max(0, $deliveredAdvance - 1400); // 12,750
-        $totalCollection = $totalPh + $unrecordedAdvance; // 515,637 + 12,750 = 528,387
+        $weeklyOrders = (int) ($orderAggs->weekly_orders ?? 0);
+        $weeklySales = (float) ($orderAggs->weekly_sales ?? 0);
+        $weeklyCollection = (float) (($phAggs->weekly_ph ?? 0) + ($advAggs->weekly_adv ?? 0));
+        $weeklyDue = (float) ($orderAggs->weekly_due ?? 0);
 
-        // Due after delivery (matches the Due shown in orders dashboard & mockup)
-        $deliveredDue = (float) (clone $orderQuery)->where('status', 'delivered')->sum('due');
-        $allDue = (float) (clone $orderQuery)->sum('due');
+        $monthlyOrders = (int) ($orderAggs->monthly_orders ?? 0);
+        $monthlySales = (float) ($orderAggs->monthly_sales ?? 0);
+        $monthlyCollection = (float) (($phAggs->monthly_ph ?? 0) + ($advAggs->monthly_adv ?? 0));
+        $monthlyDue = (float) ($orderAggs->monthly_due ?? 0);
+
+        $totalOrders = (int) ($orderAggs->total_orders ?? 0);
+        $totalSales = (float) ($orderAggs->total_sales ?? 0);
+        $deliveredAdvance = (float) ($orderAggs->delivered_advance ?? 0);
+        $unrecordedAdvance = max(0, $deliveredAdvance - 1400);
+        $totalCollection = (float) (($phAggs->total_ph ?? 0) + $unrecordedAdvance);
+
+        $deliveredDue = (float) ($orderAggs->delivered_due ?? 0);
+        $allDue = (float) ($orderAggs->all_due ?? 0);
         $totalDue = $deliveredDue > 0 ? $deliveredDue : $allDue;
 
-        // Quick Stats
         $totalCustomers = Customer::count();
-        $upcomingDeliveries = (clone $orderQuery)
-            ->where('status', '!=', 'delivered')
-            ->whereNotNull('delivery_date')
-            ->whereDate('delivery_date', '>=', $today)
-            ->count();
-        $deliveredOrders = (clone $orderQuery)->where('status', 'delivered')->count();
+        $upcomingDeliveries = (int) ($orderAggs->upcoming_deliveries ?? 0);
+        $deliveredOrders = (int) ($orderAggs->delivered_orders ?? 0);
 
-        // Order Status Counts for Donut Chart
+        // 4. Order Status Counts
         $statusCounts = (clone $orderQuery)
             ->selectRaw('status, count(*) as count')
             ->groupBy('status')
@@ -107,61 +112,55 @@ class DashboardController extends Controller
         $statusPending = (int) ($statusCounts['pending'] ?? 0);
         $statusDelivered = (int) ($statusCounts['delivered'] ?? 0);
         $statusDue = (int) ($statusCounts['due_payment'] ?? 0);
-
-        // If due_payment is not used, count orders with status pending that have due or delivered with due
         if ($statusDue === 0) {
             $statusDue = (clone $orderQuery)->where('status', 'delivered')->where('due', '>', 0)->count();
         }
 
-        // Monthly Chart Breakdown (last 6 active months dynamically)
-        $rawMonths = (clone $orderQuery)
+        // 5. Monthly Chart Breakdown (Single-pass group-by over active months)
+        $minDate = now()->subMonths(6)->startOfMonth()->toDateString();
+        $minDateTime = now()->subMonths(6)->startOfMonth()->toDateTimeString();
+
+        $mSalesGroup = (clone $orderQuery)
             ->whereNotNull('order_date')
-            ->selectRaw('SUBSTRING(order_date, 1, 7) as ym')
+            ->where('order_date', '>=', $minDate)
+            ->selectRaw("SUBSTRING(order_date, 1, 7) as ym, SUM(total_amount) as sales")
             ->groupBy('ym')
-            ->orderByDesc('ym')
-            ->limit(6)
-            ->pluck('ym')
-            ->sort()
-            ->values();
+            ->pluck('sales', 'ym');
 
-        if ($rawMonths->isEmpty()) {
-            $rawMonths = collect([
-                now()->subMonths(5)->format('Y-m'),
-                now()->subMonths(4)->format('Y-m'),
-                now()->subMonths(3)->format('Y-m'),
-                now()->subMonths(2)->format('Y-m'),
-                now()->subMonths(1)->format('Y-m'),
-                now()->format('Y-m'),
-            ]);
+        $mPhGroup = DB::table('payment_history')
+            ->whereIn('order_id', $orderIdsSub)
+            ->where('created_at', '>=', $minDateTime)
+            ->where('payment_type', '!=', 'discount')
+            ->selectRaw("SUBSTRING(created_at, 1, 7) as ym, SUM(amount) as ph")
+            ->groupBy('ym')
+            ->pluck('ph', 'ym');
+
+        $mAdvGroup = (clone $orderQuery)
+            ->whereNotNull('order_date')
+            ->where('order_date', '>=', $minDate)
+            ->whereNotIn('id', $advPluckSub)
+            ->selectRaw("SUBSTRING(order_date, 1, 7) as ym, SUM(advance) as adv")
+            ->groupBy('ym')
+            ->pluck('adv', 'ym');
+
+        $monthsList = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $monthsList->push(now()->subMonths($i)->format('Y-m'));
         }
 
-        $monthlyChart = [];
-        foreach ($rawMonths as $ym) {
-            $mSales = (float) (clone $orderQuery)
-                ->where('order_date', 'like', $ym . '%')
-                ->sum('total_amount');
-
-            $mPh = (float) DB::table('payment_history')
-                ->whereIn('order_id', (clone $orderQuery)->select('id'))
-                ->where('created_at', 'like', $ym . '%')
-                ->where('payment_type', '!=', 'discount')
-                ->sum('amount');
-
-            $mAdv = (float) (clone $orderQuery)
-                ->where('order_date', 'like', $ym . '%')
-                ->whereNotIn('id', DB::table('payment_history')->where('payment_type', 'advance')->pluck('order_id'))
-                ->sum('advance');
-
-            $monthlyChart[] = [
+        $monthlyChart = $monthsList->map(function ($ym) use ($mSalesGroup, $mPhGroup, $mAdvGroup) {
+            $sales = (float) ($mSalesGroup[$ym] ?? 0);
+            $col = (float) (($mPhGroup[$ym] ?? 0) + ($mAdvGroup[$ym] ?? 0));
+            return [
                 'month' => $ym,
-                'sales' => $mSales,
-                'collection' => $mPh + $mAdv,
+                'sales' => $sales,
+                'collection' => $col,
             ];
-        }
+        })->values()->all();
 
-        // Recent Orders (Top 10)
+        // 6. Recent Orders (Top 10)
         $recentOrders = (clone $orderQuery)
-            ->with('customer')
+            ->with('customer:id,name,phone,bd_number')
             ->orderByDesc('order_number')
             ->limit(10)
             ->get();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tailorpro-v2';
+const CACHE_NAME = 'tailorpro-v3';
 const STATIC_ASSETS = [
   '/',
   '/favicon.png',
@@ -37,16 +37,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for built assets and images
+  // Cache-first for built assets, fonts, and images
   if (
     url.pathname.startsWith('/build/') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('fonts.googleapis.com') ||
     url.pathname.match(/\.(png|jpg|jpeg|svg|woff2|woff|ttf|css|js|json)$/)
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          if (!response || response.status !== 200 || !['basic', 'cors'].includes(response.type)) {
             return response;
           }
           const responseToCache = response.clone();

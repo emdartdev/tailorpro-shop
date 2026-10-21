@@ -1,6 +1,16 @@
 import jsPDF from "jspdf";
-import { hindSiliguriBoldBase64 } from "./hindSiliguriBold";
 import { INVOICE_CONTACT_PNG_BASE64 } from "./invoiceContactImage";
+
+let _cachedFont: string | null = null;
+async function registerBengaliFont(doc: jsPDF): Promise<void> {
+  if (!_cachedFont) {
+    const mod = await import("./hindSiliguriBold");
+    _cachedFont = mod.hindSiliguriBoldBase64;
+  }
+  doc.addFileToVFS("HindSiliguri-Bold.ttf", _cachedFont);
+  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "normal");
+  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "bold");
+}
 
 // Aspect ratio of the invoice contact image (width / height)
 const INVOICE_CONTACT_ASPECT = 708 / 172;
@@ -108,7 +118,7 @@ function openAndPrintPdf(doc: jsPDF) {
   }
 }
 
-export function generateInvoicePDF(order: any, customer: any, rawItems: any[], isDeliveryInvoice = false) {
+export async function generateInvoicePDF(order: any, customer: any, rawItems: any[], isDeliveryInvoice = false) {
   // Compute a friendly customer display name. Airman orders often have no
   // customer.name (phone missing or "-"), so fall back to "Airman <IV/BD>"
   // instead of showing "N/A" / "Unknown" on the invoice.
@@ -124,10 +134,8 @@ export function generateInvoicePDF(order: any, customer: any, rawItems: any[], i
   const items = aggregateItemsForInvoice(rawItems);
   const doc = new jsPDF({ orientation: "portrait", format: "a4", unit: "mm" });
 
-  // Register Hind Siliguri Bold for Bengali text
-  doc.addFileToVFS("HindSiliguri-Bold.ttf", hindSiliguriBoldBase64);
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "normal");
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "bold");
+  // Register Hind Siliguri Bold for Bengali text asynchronously
+  await registerBengaliFont(doc);
 
   const w = doc.internal.pageSize.getWidth();   // 210
   const pageH = doc.internal.pageSize.getHeight(); // 297
@@ -710,7 +718,7 @@ function renderStandardInvoice(doc: jsPDF, order: any, customer: any, items: any
   doc.text("Address : Base tailor shop. BAF base bashar Dhaka cant 1206", w / 2, footerY + 4.5, { align: "center" });
 }
 
-export function generateSlipPDF(
+export async function generateSlipPDF(
   order: any,
   customerOrItems?: any,
   itemsOrCustomerName?: any,
@@ -754,10 +762,8 @@ export function generateSlipPDF(
 
   const doc = new jsPDF({ orientation: "portrait", format: "a4", unit: "mm" });
 
-  // Register Hind Siliguri Bold for Bengali text
-  doc.addFileToVFS("HindSiliguri-Bold.ttf", hindSiliguriBoldBase64);
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "normal");
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "bold");
+  // Register Hind Siliguri Bold for Bengali text asynchronously
+  await registerBengaliFont(doc);
 
   const pageW = doc.internal.pageSize.getWidth(); // 210
   const pageH = doc.internal.pageSize.getHeight(); // 297
@@ -1143,7 +1149,7 @@ export function generateSlipPDF(
   openAndPrintPdf(doc);
 }
 
-export function generateAirmanSlipPDF(
+export async function generateAirmanSlipPDF(
   order: any,
   slipType: "shirt" | "pant",
   notes: string,
@@ -1152,10 +1158,8 @@ export function generateAirmanSlipPDF(
 ) {
   const doc = new jsPDF({ format: [80, 200], unit: "mm" });
 
-  // Register Hind Siliguri Bold for Bengali text
-  doc.addFileToVFS("HindSiliguri-Bold.ttf", hindSiliguriBoldBase64);
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "normal");
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "bold");
+  // Register Hind Siliguri Bold for Bengali text asynchronously
+  await registerBengaliFont(doc);
 
   const w = doc.internal.pageSize.getWidth();
   const left = 4;
@@ -1201,16 +1205,14 @@ export function generateAirmanSlipPDF(
   openAndPrintPdf(doc);
 }
 
-export function generateBulkCuttingSlipPDF(
+export async function generateBulkCuttingSlipPDF(
   ordersData: { order: any; items: any[]; customerName: string }[],
   categoryLabel: string,
 ) {
   const doc = new jsPDF({ orientation: "portrait", format: "a4", unit: "mm" });
 
-  // Register Hind Siliguri Bold for Bengali text
-  doc.addFileToVFS("HindSiliguri-Bold.ttf", hindSiliguriBoldBase64);
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "normal");
-  doc.addFont("HindSiliguri-Bold.ttf", "HindSiliguri", "bold");
+  // Register Hind Siliguri Bold for Bengali text asynchronously
+  await registerBengaliFont(doc);
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();

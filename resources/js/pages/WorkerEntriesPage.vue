@@ -539,9 +539,6 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown, CheckCheck, Calendar, Folder,
   ChevronLeft, ChevronRight, Archive, RotateCcw
 } from 'lucide-vue-next';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { hindSiliguriBoldBase64 } from '@/lib/hindSiliguriBold';
 import { t, currentLang } from '@/lib/language';
 import { computeWorkerTotals, isFilledEntry, WORKER_MONTH_FILTER_KEY } from '@/lib/workerTotals';
 import SaveStatusBadge from '@/components/SaveStatusBadge.vue';
@@ -1035,7 +1032,13 @@ async function fetchEntries() {
   }
 }
 
-function downloadPDF() {
+async function downloadPDF() {
+  const [{ default: jsPDF }, autoTableModule, { hindSiliguriBoldBase64 }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+    import('@/lib/hindSiliguriBold'),
+  ]);
+  const autoTable = autoTableModule.default || autoTableModule;
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
