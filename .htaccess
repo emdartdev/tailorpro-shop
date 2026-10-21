@@ -1,0 +1,21 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Block direct HTTP access to sensitive environment, git, and configuration files
+    <FilesMatch "^(\.env|\.git|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|artisan)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Pass Authorization Header to PHP on cPanel Apache
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Forward all requests to the public/ directory if DocumentRoot is not set to public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
