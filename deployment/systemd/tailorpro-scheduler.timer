@@ -1,0 +1,11 @@
+[Unit]
+Description=Run TailorPro Artisan Schedule every minute
+RefuseManualStart=no
+RefuseManualStop=no
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Unit=tailorpro-scheduler.service
+
+[Install]
+WantedBy=timers.target

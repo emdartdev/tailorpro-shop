@@ -1,0 +1,13 @@
+[Unit]
+Description=TailorPro Artisan Schedule Runner
+After=network.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/tailorpro
+ExecStart=/usr/bin/php /var/www/tailorpro/artisan schedule:run
+
+[Install]
+WantedBy=multi-user.target

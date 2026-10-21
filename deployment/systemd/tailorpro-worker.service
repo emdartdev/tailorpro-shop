@@ -1,0 +1,15 @@
+[Unit]
+Description=TailorPro Background Queue Worker
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+Restart=always
+RestartSec=3
+WorkingDirectory=/var/www/tailorpro
+ExecStart=/usr/bin/php /var/www/tailorpro/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target

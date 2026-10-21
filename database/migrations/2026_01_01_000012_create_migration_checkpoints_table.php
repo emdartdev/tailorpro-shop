@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('migration_checkpoints', function (Blueprint $table) {
+            $table->id();
+            $table->string('table_name')->unique();
+            $table->string('last_processed_id', 36)->nullable();
+            $table->unsignedInteger('total_rows_source')->default(0);
+            $table->unsignedInteger('migrated_rows_target')->default(0);
+            $table->string('status', 30)->default('pending'); // 'pending', 'in_progress', 'completed', 'failed'
+            $table->string('checksum', 64)->nullable();
+            $table->text('last_error')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('migration_checkpoints');
+    }
+};

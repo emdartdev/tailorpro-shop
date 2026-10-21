@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+@layer base {
+  :root {
+    --background: 214 47% 97%;
+    --foreground: 220 60% 10%;
+
+    --card: 210 50% 100%;
+    --card-foreground: 220 60% 10%;
+
+    --popover: 210 50% 100%;
+    --popover-foreground: 220 60% 10%;
+
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 45% 93%;
+    --secondary-foreground: 220 60% 15%;
+
+    --muted: 214 40% 94%;
+    --muted-foreground: 215 20% 46%;
+
+    --accent: 214 45% 91%;
+    --accent-foreground: 220 60% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 35% 88%;
+    --input: 214 35% 88%;
+    --ring: 217 91% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 55% 98%;
+    --sidebar-foreground: 220 60% 10%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 45% 92%;
+    --sidebar-accent-foreground: 220 60% 15%;
+    --sidebar-border: 214 35% 88%;
+    --sidebar-ring: 217 91% 50%;
+  }
+
+  :root {
+    /* Soft pastel month folder palette (light) */
+    --month-1: 205 70% 92%;   --month-1-fg: 210 60% 28%;
+    --month-2: 350 75% 94%;   --month-2-fg: 345 55% 32%;
+    --month-3: 140 55% 90%;   --month-3-fg: 145 50% 25%;
+    --month-4: 45 90% 90%;    --month-4-fg: 35 65% 28%;
+    --month-5: 20 80% 92%;    --month-5-fg: 18 55% 30%;
+    --month-6: 320 60% 93%;   --month-6-fg: 320 45% 32%;
+    --month-7: 100 50% 90%;   --month-7-fg: 105 45% 25%;
+    --month-8: 265 60% 93%;   --month-8-fg: 265 45% 35%;
+    --month-9: 30 85% 90%;    --month-9-fg: 25 60% 30%;
+    --month-10: 175 50% 90%;  --month-10-fg: 180 45% 24%;
+    --month-11: 10 70% 92%;   --month-11-fg: 8 50% 32%;
+    --month-12: 225 65% 93%;  --month-12-fg: 225 50% 33%;
+  }
+
+  .dark {
+    --background: 222 55% 6%;
+    --foreground: 213 35% 88%;
+
+    --card: 222 50% 9%;
+    --card-foreground: 213 35% 88%;
+
+    --popover: 222 50% 9%;
+    --popover-foreground: 213 35% 88%;
+
+    --primary: 213 94% 58%;
+    --primary-foreground: 222 55% 6%;
+
+    --secondary: 220 40% 14%;
+    --secondary-foreground: 213 35% 88%;
+
+    --muted: 220 40% 14%;
+    --muted-foreground: 215 25% 58%;
+
+    --accent: 220 40% 16%;
+    --accent-foreground: 213 35% 88%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 40%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 217 91% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 40% 16%;
+    --input: 220 40% 16%;
+    --ring: 213 94% 58%;
+
+    --sidebar-background: 222 55% 5%;
+    --sidebar-foreground: 213 35% 88%;
+    --sidebar-primary: 213 94% 58%;
+    --sidebar-primary-foreground: 222 55% 6%;
+    --sidebar-accent: 220 40% 13%;
+    /* Soft month folder palette (dark, muted) */
+    --month-1: 205 40% 22%;   --month-1-fg: 205 60% 85%;
+    --month-2: 350 35% 24%;   --month-2-fg: 350 60% 88%;
+    --month-3: 140 30% 20%;   --month-3-fg: 140 45% 82%;
+    --month-4: 45 35% 22%;    --month-4-fg: 45 60% 85%;
+    --month-5: 20 35% 23%;    --month-5-fg: 20 55% 86%;
+    --month-6: 320 30% 24%;   --month-6-fg: 320 45% 87%;
+    --month-7: 100 28% 20%;   --month-7-fg: 100 40% 82%;
+    --month-8: 265 32% 25%;   --month-8-fg: 265 45% 87%;
+    --month-9: 30 35% 22%;    --month-9-fg: 30 55% 85%;
+    --month-10: 175 30% 20%;  --month-10-fg: 175 40% 83%;
+    --month-11: 10 35% 23%;   --month-11-fg: 10 55% 87%;
+    --month-12: 225 35% 25%;  --month-12-fg: 225 50% 87%;
+    --sidebar-accent-foreground: 213 35% 88%;
+    --sidebar-border: 220 40% 16%;
+    --sidebar-ring: 213 94% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  .font-bangla body,
+  .font-bangla p,
+  .font-bangla span,
+  .font-bangla label,
+  .font-bangla input,
+  .font-bangla textarea,
+  .font-bangla select,
+  .font-bangla button,
+  .font-bangla h1,
+  .font-bangla h2,
+  .font-bangla h3,
+  .font-bangla h4,
+  .font-bangla h5,
+  .font-bangla h6 {
+    font-family: "Hind Siliguri", "Poppins", sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight;
+    line-height: 1.25;
+  }
+
+  p, span, label, input, textarea, select {
+    line-height: 1.6;
+  }
+}
+
+@layer utilities {
+  .card-shadow {
+    box-shadow: 0 1px 3px 0 hsl(var(--foreground) / 0.04), 0 1px 2px -1px hsl(var(--foreground) / 0.04);
+  }
+  .card-shadow-hover {
+    box-shadow: 0 4px 6px -1px hsl(var(--foreground) / 0.06), 0 2px 4px -2px hsl(var(--foreground) / 0.04);
+  }
+
+  /* Safe Area Padding Utilities for Notch / Dynamic Island devices */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Touch optimizations */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}
+
+/* Base resets for mobile viewport and smooth touch scrolling */
+html, body {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Viewer (read-only) lockdown: disable all inputs and action buttons inside main content.
+   Navigation (sidebar, header, mobile bottom nav) remains usable. */
+body[data-viewer="true"] .viewer-lock-root input:not([type="search"]),
+body[data-viewer="true"] .viewer-lock-root textarea,
+body[data-viewer="true"] .viewer-lock-root select,
+body[data-viewer="true"] .viewer-lock-root [contenteditable="true"] {
+  pointer-events: none !important;
+  user-select: none !important;
+  background-color: hsl(var(--muted)) !important;
+  cursor: not-allowed !important;
+}
+body[data-viewer="true"] .viewer-lock-root input:not([type="search"]),
+body[data-viewer="true"] .viewer-lock-root textarea,
+body[data-viewer="true"] .viewer-lock-root select {
+  caret-color: transparent !important;
+}
+/* Block button clicks except those explicitly allowed via .viewer-allow */
+body[data-viewer="true"] .viewer-lock-root button:not(.viewer-allow):not([data-viewer-allow]),
+body[data-viewer="true"] .viewer-lock-root a[role="button"]:not(.viewer-allow),
+body[data-viewer="true"] .viewer-lock-root [role="checkbox"],
+body[data-viewer="true"] .viewer-lock-root [role="switch"],
+body[data-viewer="true"] .viewer-lock-root [role="radio"] {
+  pointer-events: none !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+/* Allow navigation links and tab triggers so viewers can still browse */
+body[data-viewer="true"] .viewer-lock-root a:not([role="button"]),
+body[data-viewer="true"] .viewer-lock-root [role="tab"],
+body[data-viewer="true"] .viewer-lock-root [role="combobox"][aria-haspopup="listbox"] {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+/* Viewer: fully hide destructive/edit affordances rather than just disabling */
+body[data-viewer="true"] .viewer-lock-root [data-viewer-hide],
+body[data-viewer="true"] .viewer-lock-root .viewer-hide {
+  display: none !important;
+}
+/* Status badge dropdown trigger should look static (not clickable) */
+body[data-viewer="true"] .viewer-lock-root [data-status-trigger] {
+  pointer-events: none !important;
+  cursor: default !important;
+}
